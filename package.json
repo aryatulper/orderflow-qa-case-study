@@ -1,0 +1,33 @@
+{
+  "name": "orderflow-qa-case-study",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A controlled order lifecycle system and evidence-led Junior QA portfolio",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev": "tsx watch src/server.ts",
+    "start": "node dist/server.js",
+    "test:unit": "node --import tsx --test tests/unit/*.test.ts",
+    "pretest:api": "node scripts/ensure-reports.mjs",
+    "test:api": "newman run postman/OrderFlow.postman_collection.json -e postman/local.postman_environment.json --reporters cli,junit --reporter-junit-export reports/newman.xml",
+    "pretest:e2e": "node scripts/ensure-reports.mjs",
+    "test:sql": "node scripts/verify-sql.mjs",
+    "test:e2e": "playwright test",
+    "evidence:screenshot": "node scripts/capture-screenshot.mjs",
+    "test": "npm run test:unit && npm run test:api && npm run test:e2e && npm run test:sql"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "pg": "^8.16.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.3.0",
+    "@types/pg": "^8.15.5",
+    "newman": "^6.2.2",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}

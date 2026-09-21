@@ -1,0 +1,94 @@
+{
+  "info": {
+    "name": "OrderFlow API Regression",
+    "description": "Deterministic API checks for authentication, stock, payment idempotency, access control and refunds. No real payment gateway is called.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 Login customer",
+      "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/login", "body": { "mode": "raw", "raw": "{\"email\":\"arya@example.test\",\"password\":\"demo123\"}" } },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('customer login returns a token', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().token).to.have.length(64); });", "pm.environment.set('customerToken', pm.response.json().token);"] } }]
+    },
+    {
+      "name": "02 Product catalog",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/products" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('catalog has priced, stocked products', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().products.length).to.be.at.least(4); pm.expect(pm.response.json().products[0].priceCents).to.be.above(0); });", "pm.environment.set('productId', pm.response.json().products[0].id);"] } }]
+    },
+    {
+      "name": "03 Reject insufficient stock",
+      "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{customerToken}}" }], "url": "{{baseUrl}}/api/orders", "body": { "mode": "raw", "raw": "{\"items\":[{\"productId\":4,\"quantity\":2}]}" } },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('insufficient stock is a conflict', function () { pm.response.to.have.status(409); pm.expect(pm.response.json().error.code).to.eql('INSUFFICIENT_STOCK'); });"] } }]
+    },
+    {
+      "name": "04 Create order",
+      "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{customerToken}}" }], "url": "{{baseUrl}}/api/orders", "body": { "mode": "raw", "raw": "{\"items\":[{\"productId\":{{productId}},\"quantity\":2}]}" } },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('order total is derived by the server', function () { pm.response.to.have.status(201); pm.expect(pm.response.json().order.totalCents).to.eql(49800); pm.expect(pm.response.json().order.status).to.eql('PENDING_PAYMENT'); });", "pm.environment.set('orderId', pm.response.json().order.id);"] } }]
+    },
+    {
+      "name": "05 Login other customer",
+      "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/login", "body": { "mode": "raw", "raw": "{\"email\":\"other@example.test\",\"password\":\"demo123\"}" } },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('second customer login succeeds', function () { pm.response.to.have.status(200); });", "pm.environment.set('otherToken', pm.response.json().token);"] } }]
+    },
+    {
+      "name": "06 Hide another customer's order",
+      "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{otherToken}}" }], "url": "{{baseUrl}}/api/orders/{{orderId}}" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('cross-customer read is hidden', function () { pm.response.to.have.status(404); pm.expect(pm.response.json().error.code).to.eql('NOT_FOUND'); });"] } }]
+    },
+    {
+      "name": "07 Capture payment",
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{customerToken}}" }, { "key": "Idempotency-Key", "value": "newman-payment-{{orderId}}" }], "url": "{{baseUrl}}/api/orders/{{orderId}}/payments" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('first capture creates one full payment', function () { pm.response.to.have.status(201); pm.expect(pm.response.json().order.status).to.eql('PAID'); pm.expect(pm.response.json().order.payments).to.have.length(1); pm.expect(pm.response.json().order.payments[0].amountCents).to.eql(49800); });"] } }]
+    },
+    {
+      "name": "08 Replay same payment key",
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{customerToken}}" }, { "key": "Idempotency-Key", "value": "newman-payment-{{orderId}}" }], "url": "{{baseUrl}}/api/orders/{{orderId}}/payments" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('replay is safe and does not double charge', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().replayed).to.eql(true); pm.expect(pm.response.json().order.payments).to.have.length(1); });"] } }]
+    },
+    {
+      "name": "09 Reject second payment key",
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{customerToken}}" }, { "key": "Idempotency-Key", "value": "newman-other-{{orderId}}" }], "url": "{{baseUrl}}/api/orders/{{orderId}}/payments" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('different key cannot pay a paid order', function () { pm.response.to.have.status(409); pm.expect(pm.response.json().error.code).to.eql('INVALID_STATE'); });"] } }]
+    },
+    {
+      "name": "10 Customer cannot issue refund",
+      "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{customerToken}}" }], "url": "{{baseUrl}}/api/orders/{{orderId}}/refunds", "body": { "mode": "raw", "raw": "{\"amountCents\":10000}" } },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('refund requires admin role', function () { pm.response.to.have.status(403); });"] } }]
+    },
+    {
+      "name": "11 Login admin",
+      "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/login", "body": { "mode": "raw", "raw": "{\"email\":\"admin@example.test\",\"password\":\"demo123\"}" } },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('admin login succeeds', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().user.role).to.eql('admin'); });", "pm.environment.set('adminToken', pm.response.json().token);"] } }]
+    },
+    {
+      "name": "12 Reject over-refund",
+      "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{adminToken}}" }], "url": "{{baseUrl}}/api/orders/{{orderId}}/refunds", "body": { "mode": "raw", "raw": "{\"amountCents\":49801}" } },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('over-refund is blocked', function () { pm.response.to.have.status(409); pm.expect(pm.response.json().error.code).to.eql('REFUND_LIMIT'); });"] } }]
+    },
+    {
+      "name": "13 Partial refund",
+      "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{adminToken}}" }], "url": "{{baseUrl}}/api/orders/{{orderId}}/refunds", "body": { "mode": "raw", "raw": "{\"amountCents\":10000}" } },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('partial refund updates status', function () { pm.response.to.have.status(201); pm.expect(pm.response.json().order.status).to.eql('PARTIALLY_REFUNDED'); });"] } }]
+    },
+    {
+      "name": "14 Refund remaining balance",
+      "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{adminToken}}" }], "url": "{{baseUrl}}/api/orders/{{orderId}}/refunds", "body": { "mode": "raw", "raw": "{\"amountCents\":39800}" } },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('full cumulative refund closes the order', function () { pm.response.to.have.status(201); pm.expect(pm.response.json().order.status).to.eql('REFUNDED'); pm.expect(pm.response.json().order.refunds).to.have.length(2); });"] } }]
+    },
+    {
+      "name": "15 Create order for cancellation",
+      "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{customerToken}}" }], "url": "{{baseUrl}}/api/orders", "body": { "mode": "raw", "raw": "{\"items\":[{\"productId\":{{productId}},\"quantity\":1}]}" } },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('cancellable order created', function () { pm.response.to.have.status(201); });", "pm.environment.set('cancelOrderId', pm.response.json().order.id);"] } }]
+    },
+    {
+      "name": "16 Cancel order",
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{customerToken}}" }], "url": "{{baseUrl}}/api/orders/{{cancelOrderId}}/cancel" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('cancel transitions to CANCELLED', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().order.status).to.eql('CANCELLED'); });"] } }]
+    },
+    {
+      "name": "17 Reject repeat cancellation",
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{customerToken}}" }], "url": "{{baseUrl}}/api/orders/{{cancelOrderId}}/cancel" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('cancel cannot execute twice', function () { pm.response.to.have.status(409); pm.expect(pm.response.json().error.code).to.eql('INVALID_STATE'); });"] } }]
+    }
+  ]
+}

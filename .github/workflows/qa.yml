@@ -1,0 +1,56 @@
+name: QA regression and delivery package
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm run test:unit
+      - run: npx playwright install --with-deps chromium
+      - run: docker compose up --build -d
+      - name: Wait for API
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://localhost:3000/api/health; then exit 0; fi
+            sleep 2
+          done
+          docker compose logs
+          exit 1
+      - run: npm run test:api
+      - run: npm run test:e2e
+      - run: npm run test:sql
+      - name: Package verified application
+        if: github.event_name != 'pull_request'
+        run: tar -czf orderflow-build.tgz dist public db package.json package-lock.json
+      - name: Upload delivery package
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: orderflow-build
+          path: orderflow-build.tgz
+      - name: Upload test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-reports
+          path: |
+            reports/
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+      - name: Container logs on failure
+        if: failure()
+        run: docker compose logs

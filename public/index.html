@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OrderFlow · QA case study</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="shell header-inner">
+      <div><span class="eyebrow">CONTROLLED TEST SYSTEM</span><h1>OrderFlow</h1></div>
+      <div class="session"><span id="current-user">Not signed in</span><button id="logout" class="text-button" type="button" hidden>Sign out</button></div>
+    </div>
+  </header>
+  <main class="shell">
+    <section class="intro">
+      <div><span class="eyebrow">ORDER LIFECYCLE LAB</span><h2>From cart to refund,<br><em>every state matters.</em></h2></div>
+      <p>This deliberately small storefront supports a reproducible QA case study. Payments are simulated; no real money or personal data is processed.</p>
+    </section>
+    <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+    <section id="login-panel" class="panel login-panel" aria-labelledby="login-title">
+      <div><span class="eyebrow">DEMO ACCESS</span><h3 id="login-title">Sign in</h3><p>Use a seeded customer or admin account to explore each workflow.</p></div>
+      <form id="login-form">
+        <label for="email">Email</label><input id="email" name="email" type="email" autocomplete="username" value="arya@example.test" required>
+        <label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" value="demo123" required>
+        <button class="primary" type="submit">Sign in</button>
+      </form>
+      <p class="hint">Customer: arya@example.test · Other customer: other@example.test · Admin: admin@example.test<br>All demo passwords: demo123</p>
+    </section>
+    <div id="workspace" hidden>
+      <div class="columns">
+        <section class="panel" aria-labelledby="products-title">
+          <div class="section-head"><div><span class="eyebrow">01 / CATALOG</span><h3 id="products-title">Products</h3></div><button id="refresh-products" class="text-button" type="button">Refresh stock</button></div>
+          <div id="products" class="product-grid"></div>
+        </section>
+        <aside class="panel cart-panel" aria-labelledby="cart-title">
+          <span class="eyebrow">02 / CHECKOUT</span><h3 id="cart-title">Your cart</h3>
+          <div id="cart-items" class="cart-items"><p class="muted">Nothing in your cart yet.</p></div>
+          <div class="total"><span>Total</span><strong id="cart-total">₺0.00</strong></div>
+          <button id="place-order" class="primary" type="button" disabled>Place order</button>
+          <p class="hint">Stock is reserved when the order is placed. Payment is a deterministic simulation.</p>
+        </aside>
+      </div>
+      <section class="panel orders-panel" aria-labelledby="orders-title">
+        <div class="section-head"><div><span class="eyebrow">03 / HISTORY</span><h3 id="orders-title">Orders &amp; state changes</h3></div><button id="refresh-orders" class="text-button" type="button">Refresh orders</button></div>
+        <div id="orders" class="order-list"><p class="muted">No orders yet.</p></div>
+      </section>
+    </div>
+  </main>
+  <footer class="shell">QA PORTFOLIO CASE STUDY <span>·</span> SIMULATED COMMERCE ONLY</footer>
+  <script src="/app.js" defer></script>
+</body>
+</html>
