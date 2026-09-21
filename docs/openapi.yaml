@@ -1,0 +1,220 @@
+openapi: 3.1.0
+info:
+  title: OrderFlow QA API
+  version: 1.0.0
+  description: Controlled test API. Payments and refunds are simulated monetary ledger events.
+servers:
+  - url: http://localhost:3000
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: 24-hour opaque demo token returned by /api/login.
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+    Product:
+      type: object
+      required: [id, name, priceCents, stock]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        priceCents: { type: integer, minimum: 1 }
+        stock: { type: integer, minimum: 0 }
+    Order:
+      type: object
+      required: [id, userId, status, totalCents, createdAt, items, payments, refunds]
+      properties:
+        id: { type: integer }
+        userId: { type: integer }
+        status:
+          type: string
+          enum: [PENDING_PAYMENT, PAID, PARTIALLY_REFUNDED, REFUNDED, CANCELLED]
+        totalCents: { type: integer, minimum: 1 }
+        createdAt: { type: string, format: date-time }
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              productId: { type: integer }
+              name: { type: string }
+              quantity: { type: integer }
+              unitPriceCents: { type: integer }
+        payments:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: integer }
+              amountCents: { type: integer }
+              idempotencyKey: { type: string }
+              createdAt: { type: string, format: date-time }
+        refunds:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: integer }
+              amountCents: { type: integer }
+              reason: { type: string, enum: [RETURN, CANCELLATION] }
+              createdAt: { type: string, format: date-time }
+paths:
+  /api/health:
+    get:
+      summary: Readiness check including database query
+      responses:
+        '200': { description: API and database are available }
+  /api/login:
+    post:
+      summary: Create a demo session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        '200':
+          description: Session token and user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+                  user:
+                    type: object
+                    properties:
+                      id: { type: integer }
+                      email: { type: string }
+                      displayName: { type: string }
+                      role: { type: string, enum: [customer, admin] }
+        '401': { description: Invalid credentials }
+  /api/products:
+    get:
+      summary: List products and current stock
+      responses:
+        '200':
+          description: Catalog
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  products:
+                    type: array
+                    items: { $ref: '#/components/schemas/Product' }
+  /api/orders:
+    get:
+      security: [{ bearerAuth: [] }]
+      summary: List own orders or all orders for admin
+      responses:
+        '200': { description: Up to 50 recent orders }
+        '401': { description: Invalid session }
+    post:
+      security: [{ bearerAuth: [] }]
+      summary: Create a pending order and reserve stock
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items]
+              properties:
+                items:
+                  type: array
+                  minItems: 1
+                  maxItems: 10
+                  items:
+                    type: object
+                    required: [productId, quantity]
+                    properties:
+                      productId: { type: integer, minimum: 1 }
+                      quantity: { type: integer, minimum: 1 }
+      responses:
+        '201': { description: Order created }
+        '400': { description: Invalid items }
+        '403': { description: Admin cannot create order }
+        '409': { description: Insufficient stock }
+  /api/orders/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer, minimum: 1 }
+    get:
+      security: [{ bearerAuth: [] }]
+      summary: Read an order if owner or admin
+      responses:
+        '200': { description: Order details }
+        '404': { description: Not found or not owned }
+  /api/orders/{id}/payments:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer, minimum: 1 }
+    post:
+      security: [{ bearerAuth: [] }]
+      summary: Simulate payment capture with an idempotency key
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string, minLength: 8, maxLength: 100 }
+      responses:
+        '201': { description: First capture }
+        '200': { description: Safe replay of existing key }
+        '400': { description: Invalid key }
+        '404': { description: Not found or not owned }
+        '409': { description: Order no longer pending }
+  /api/orders/{id}/cancel:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer, minimum: 1 }
+    post:
+      security: [{ bearerAuth: [] }]
+      summary: Cancel pending or paid unrefunded order
+      responses:
+        '200': { description: Cancelled; stock restored }
+        '404': { description: Not found or not owned }
+        '409': { description: Invalid state }
+  /api/orders/{id}/refunds:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer, minimum: 1 }
+    post:
+      security: [{ bearerAuth: [] }]
+      summary: Admin-only monetary return refund
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amountCents]
+              properties:
+                amountCents: { type: integer, minimum: 1 }
+      responses:
+        '201': { description: Refund recorded }
+        '403': { description: Admin required }
+        '409': { description: Invalid state or amount exceeds remaining balance }
