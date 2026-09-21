@@ -5,6 +5,7 @@ import { Pool, PoolClient } from 'pg';
 
 export const pool = new Pool({ connectionString: process.env.DATABASE_URL || 'postgres://orderflow:orderflow@localhost:5432/orderflow' });
 
+// One transaction keeps stock, order status and money records consistent on failure.
 export async function inTransaction<T>(work: (client: PoolClient) => Promise<T>): Promise<T> {
   const client = await pool.connect();
   try {
@@ -20,6 +21,7 @@ export async function inTransaction<T>(work: (client: PoolClient) => Promise<T>)
   }
 }
 
+// Reproducible demo accounts and products make fresh local/CI runs testable.
 export async function initializeDatabase(): Promise<void> {
   const schema = await readFile(path.resolve(process.cwd(), 'db/schema.sql'), 'utf8');
   await pool.query(schema);

@@ -27,6 +27,7 @@ FROM orders o JOIN payments p ON p.order_id = o.id
 WHERE o.status = 'CANCELLED'
 AND (SELECT COALESCE(SUM(r.amount_cents), 0) FROM refunds r WHERE r.order_id = o.id) <> o.total_cents
 UNION ALL
+-- An empty test database must not produce a misleading green result.
 SELECT 'no_orders_present', 0 WHERE NOT EXISTS (SELECT 1 FROM orders)
 UNION ALL
 SELECT 'no_payments_present', 0 WHERE NOT EXISTS (SELECT 1 FROM payments)

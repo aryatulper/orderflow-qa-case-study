@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS sessions (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Money uses integer cents, and the database itself rejects negative stock.
 CREATE TABLE IF NOT EXISTS products (
   id SERIAL PRIMARY KEY,
   name TEXT NOT NULL UNIQUE,
@@ -38,6 +39,7 @@ CREATE TABLE IF NOT EXISTS order_items (
   PRIMARY KEY (order_id, product_id)
 );
 
+-- Uniqueness protects against duplicate capture even if application retries race.
 CREATE TABLE IF NOT EXISTS payments (
   id SERIAL PRIMARY KEY,
   order_id INTEGER NOT NULL REFERENCES orders(id),
@@ -48,6 +50,7 @@ CREATE TABLE IF NOT EXISTS payments (
   UNIQUE (order_id)
 );
 
+-- Separate refund rows preserve an audit trail for returns and cancellations.
 CREATE TABLE IF NOT EXISTS refunds (
   id SERIAL PRIMARY KEY,
   order_id INTEGER NOT NULL REFERENCES orders(id),

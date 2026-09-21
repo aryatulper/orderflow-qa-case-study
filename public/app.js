@@ -2,6 +2,7 @@ const state = { token: sessionStorage.getItem('orderflow-token'), user: JSON.par
 const $ = id => document.getElementById(id);
 const money = cents => new Intl.NumberFormat('en-TR', { style: 'currency', currency: 'TRY' }).format(cents / 100);
 
+// Every API call shares token handling and one place for readable error messages.
 async function api(path, options = {}) {
   const headers = { ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...(state.token ? { Authorization: `Bearer ${state.token}` } : {}), ...options.headers };
   const response = await fetch(`/api${path}`, { ...options, headers });
@@ -60,10 +61,12 @@ function renderCart() {
     row.append(label, remove); root.append(row);
   }
   if (state.cart.size === 0) { const empty = document.createElement('p'); empty.className = 'muted'; empty.textContent = 'Nothing in your cart yet.'; root.append(empty); }
+  // This total is a preview; the server recalculates prices from PostgreSQL.
   $('cart-total').textContent = money(total);
   $('place-order').disabled = state.cart.size === 0;
 }
 
+// Buttons reflect order state, but the API still enforces roles and transitions.
 function renderOrders(orders) {
   const root = $('orders'); root.replaceChildren();
   if (orders.length === 0) { const empty = document.createElement('p'); empty.className = 'muted'; empty.textContent = 'No orders yet.'; root.append(empty); return; }
@@ -80,6 +83,7 @@ function renderOrders(orders) {
     const actions = document.createElement('div'); actions.className = 'order-actions';
     if (state.user.role === 'customer' && order.status === 'PENDING_PAYMENT') {
       const pay = actionButton('Pay (simulated)', async () => {
+        // Reusing this key makes a repeated click safe after a network retry.
         await api(`/orders/${order.id}/payments`, { method: 'POST', headers: { 'Idempotency-Key': `ui-order-${order.id}` } });
         notify(`Order #${order.id} paid.`); await refreshOrders();
       });

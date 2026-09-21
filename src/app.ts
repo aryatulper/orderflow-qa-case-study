@@ -17,6 +17,7 @@ function getUser(res: Response): User {
   return res.locals.user as User;
 }
 
+// The database stores a token hash, never the bearer token sent by the browser.
 async function requireAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
   const match = /^Bearer ([a-f0-9]{64})$/.exec(req.header('authorization') || '');
   if (!match) throw new DomainError(401, 'UNAUTHORIZED', 'A valid bearer token is required');
@@ -36,6 +37,7 @@ function requireAdmin(res: Response): void {
   if (getUser(res).role !== 'admin') throw new DomainError(403, 'FORBIDDEN', 'Admin role is required');
 }
 
+// Lock the order before changing payment or refund state so concurrent requests serialize.
 async function lockedOrder(client: PoolClient, id: number): Promise<OrderRow> {
   const result = await client.query<OrderRow>('SELECT * FROM orders WHERE id = $1 FOR UPDATE', [id]);
   if (!result.rows[0]) throw new DomainError(404, 'NOT_FOUND', 'Order not found');
@@ -49,6 +51,7 @@ function requireOwner(order: OrderRow, user: User): void {
   }
 }
 
+// List, detail and mutation responses all use this same order-and-ledger shape.
 async function orderView(client: PoolClient | Pool, id: number, user: User) {
   const orderResult = await client.query<OrderRow>('SELECT * FROM orders WHERE id = $1', [id]);
   const order = orderResult.rows[0];
@@ -129,6 +132,7 @@ app.post('/api/orders', requireAuth, async (req, res) => {
   const order = await inTransaction(async client => {
     const pricedItems = [];
     let totalCents = 0;
+    // Sorted product locks prevent overselling and avoid deadlocks between overlapping carts.
     for (const item of [...items].sort((a, b) => a.productId - b.productId)) {
       const productResult = await client.query<{ id: number; price_cents: number; stock: number }>(
         'SELECT id, price_cents, stock FROM products WHERE id = $1 FOR UPDATE', [item.productId]
@@ -145,6 +149,7 @@ app.post('/api/orders', requireAuth, async (req, res) => {
       [user.id, totalCents]
     );
     const orderId = result.rows[0]!.id;
+    // Snapshot unit prices: later catalog changes must not rewrite an existing order.
     for (const item of pricedItems) {
       await client.query(
         `INSERT INTO order_items (order_id, product_id, quantity, unit_price_cents) VALUES ($1, $2, $3, $4)`,
@@ -173,6 +178,7 @@ app.post('/api/orders/:id/payments', requireAuth, async (req, res) => {
     const order = await lockedOrder(client, id);
     requireOwner(order, user);
     if (order.user_id !== user.id) throw new DomainError(403, 'FORBIDDEN', 'Only the customer can pay this order');
+    // A retry with the same key returns the first result instead of a second payment.
     const existing = await client.query('SELECT id FROM payments WHERE order_id = $1 AND idempotency_key = $2', [id, key]);
     if (existing.rows[0]) return { replayed: true, order: await orderView(client, id, user) };
     if (!paymentAllowed(order.status)) throw new DomainError(409, 'INVALID_STATE', 'Order is not awaiting payment');
@@ -191,6 +197,7 @@ app.post('/api/orders/:id/cancel', requireAuth, async (req, res) => {
     requireOwner(current, user);
     if (current.user_id !== user.id) throw new DomainError(403, 'FORBIDDEN', 'Only the customer can cancel this order');
     if (!cancellationAllowed(current.status)) throw new DomainError(409, 'INVALID_STATE', 'Order cannot be cancelled in this state');
+    // Paid cancellation records a full refund; both paths restore reserved stock once.
     if (current.status === 'PAID') {
       await client.query(`INSERT INTO refunds (order_id, amount_cents, reason) VALUES ($1, $2, 'CANCELLATION')`, [id, current.total_cents]);
     }
@@ -215,6 +222,7 @@ app.post('/api/orders/:id/refunds', requireAuth, async (req, res) => {
     const refunded = await client.query<{ amount: string }>(
       'SELECT COALESCE(SUM(amount_cents), 0) AS amount FROM refunds WHERE order_id = $1', [id]
     );
+    // Check cumulative refunds under the order lock, not against a stale UI balance.
     const nextStatus = refundStatus(current.total_cents, Number(refunded.rows[0]!.amount), amountCents);
     await client.query(`INSERT INTO refunds (order_id, amount_cents, reason) VALUES ($1, $2, 'RETURN')`, [id, amountCents]);
     await client.query('UPDATE orders SET status = $1 WHERE id = $2', [nextStatus, id]);
@@ -225,6 +233,7 @@ app.post('/api/orders/:id/refunds', requireAuth, async (req, res) => {
 
 app.use(express.static(path.resolve(process.cwd(), 'public')));
 
+// Stable error codes let API tests distinguish business-rule failures from server failures.
 app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
   if (error instanceof DomainError) {
     res.status(error.statusCode).json({ error: { code: error.code, message: error.message } });

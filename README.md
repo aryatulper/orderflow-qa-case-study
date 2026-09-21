@@ -15,6 +15,10 @@ An evidence-led Junior QA portfolio case study prepared for Arya Tulper. A delib
 5. [A genuine defect found and fixed](docs/defects/BUG-001.md), plus [clearly labelled report-writing exercises](docs/defect-exercises.md).
 6. [Local execution record](docs/test-execution.md) — exact checks run and remaining verification limits.
 
+### Code reading path
+
+Start with [state rules](src/domain.ts), then follow the order/payment/cancellation/refund routes in [the API](src/app.ts). [Database setup](src/db.ts) and [schema](db/schema.sql) explain transactions and stored records; [the storefront](public/app.js) shows what a customer sees. Finally, compare [API race/permission tests](tests/e2e/api-contract.spec.ts), [UI journeys](tests/e2e/order-flow.spec.ts) and [SQL invariants](db/validations.sql) with those rules. Short comments in these files call out the decisions that are easy to miss.
+
 ## Run locally
 
 Requires Docker with Compose and Node.js 24.
