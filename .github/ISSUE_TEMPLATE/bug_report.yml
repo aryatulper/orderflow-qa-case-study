@@ -1,0 +1,50 @@
+name: Defect report
+description: Report a reproducible OrderFlow defect
+title: "[BUG] "
+labels: [bug]
+body:
+  - type: input
+    id: requirement
+    attributes:
+      label: Requirement / test case ID
+      placeholder: BR-04 / TC-08
+    validations:
+      required: true
+  - type: textarea
+    id: preconditions
+    attributes:
+      label: Preconditions and test data
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result and evidence
+      description: Include response, screenshot, trace or SQL output; redact tokens.
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options: [Critical, High, Medium, Low]
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment and build/commit
+    validations:
+      required: true
