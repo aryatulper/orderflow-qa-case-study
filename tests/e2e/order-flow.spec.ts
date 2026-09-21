@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 
+// UI tests follow the customer journey; API tests cover deeper edge cases separately.
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();

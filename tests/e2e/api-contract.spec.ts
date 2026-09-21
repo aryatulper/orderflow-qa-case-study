@@ -1,5 +1,6 @@
 import { expect, request, test } from '@playwright/test';
 
+// Direct API checks cover boundary rules without depending on the storefront UI.
 async function login(api: Awaited<ReturnType<typeof request.newContext>>, email: string): Promise<string> {
   const response = await api.post('/api/login', { data: { email, password: 'demo123' } });
   expect(response.ok()).toBeTruthy();
@@ -71,6 +72,7 @@ test('paid cancellation creates one full refund and returns stock exactly once',
   } finally { await api.dispose(); }
 });
 
+// Simultaneous requests prove the order lock and idempotency key prevent double capture.
 test('parallel payment retries share one capture', async ({ baseURL }) => {
   const api = await request.newContext({ baseURL });
   try {
@@ -89,6 +91,7 @@ test('parallel payment retries share one capture', async ({ baseURL }) => {
   } finally { await api.dispose(); }
 });
 
+// The one-unit product forces a race; cancelling the winner restores shared test stock.
 test('parallel orders cannot oversell the limited-stock product', async ({ baseURL }) => {
   const api = await request.newContext({ baseURL });
   try {
