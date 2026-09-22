@@ -13,14 +13,15 @@ Show that the order lifecycle respects stock, financial and authorization invari
 | Cross-customer order access | High | Medium | P0 | Newman/Playwright API |
 | Stock oversell or double restock | High | Medium | P0 | API negative, UI cancellation, transaction/SQL check |
 | Wrong totals or persistence mismatch | High | Medium | P0 | API assertion, SQL validation |
-| UI regression in checkout | Medium | Medium | P1 | Playwright smoke journey |
-| Error wording or responsive layout | Low | Medium | P2 | Manual exploratory charter |
+| UI regression in checkout | Medium | Medium | P1 | Playwright checkout, cart and focus journeys |
+| Mobile access or unclear refund input | Medium | Medium | P1 | Playwright viewport, demo account and admin refund checks |
+| Error wording and visual clarity | Low | Medium | P2 | UI/UX design goal and manual exploratory charter |
 
 ## Test levels and selection
 
 - **Unit:** pure state transitions, numeric boundaries and refund calculation.
 - **API:** request/response contract, negative input, authorization, idempotency and lifecycle mutations. Newman offers a portable collection that an interviewer can run directly.
-- **UI:** one paid checkout and one cancellation/stock-return journey. These are high-value user paths; assertions prefer accessible names and state rather than coordinates.
+- **UI:** paid checkout and cancellation/stock-return journeys, plus mobile sign-in, responsive overflow, order filtering and admin refund-form checks. Assertions prefer accessible names and state rather than coordinates.
 - **Database:** independent invariant query, run after the workflow suites.
 - **Exploratory/manual:** use the charter below for interactions and edge cases not worth automating yet.
 

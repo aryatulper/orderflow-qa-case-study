@@ -14,6 +14,7 @@ An evidence-led Junior QA portfolio case study prepared for Arya Tulper. A delib
 4. [OpenAPI contract](docs/openapi.yaml), [Postman collection](postman/OrderFlow.postman_collection.json), [Playwright tests](tests/e2e) and [SQL invariants](db/validations.sql).
 5. [A genuine defect found and fixed](docs/defects/BUG-001.md), plus [clearly labelled report-writing exercises](docs/defect-exercises.md).
 6. [Local execution record](docs/test-execution.md) — exact checks run and remaining verification limits.
+7. [UI/UX design goal](docs/design-goal.md) — visual decisions, accessibility targets and regression checks.
 
 ### Code reading path
 
@@ -54,7 +55,7 @@ To stop: `docker compose down`. A named PostgreSQL volume preserves data between
 | UI + API | Critical user journeys and cross-user checks | `npm run test:e2e` |
 | SQL | Financial and state invariants across persisted records | `npm run test:sql` |
 
-The [GitHub Actions workflow](.github/workflows/qa.yml) starts PostgreSQL and the app with Compose, runs all layers, and uploads JUnit/HTML/trace evidence. After a successful non-PR run it also packages the verified application as a downloadable delivery artifact. This demonstrates CI plus a release-ready delivery step; there is **no automatic production deployment** without a chosen destination. Failure artifacts are retained; a green badge is intentionally not shown until this repository has a real public CI run.
+The [GitHub Actions workflow](.github/workflows/qa.yml) starts PostgreSQL and the app with Compose, runs all layers, and uploads JUnit/HTML/trace evidence. After a successful non-PR run it also packages the verified application as a downloadable delivery artifact. This demonstrates CI plus a release-ready delivery step; there is **no automatic production deployment** without a chosen destination. See the [current CI runs](https://github.com/aryatulper/orderflow-qa-case-study/actions) for results and artifacts.
 
 `npm audit --omit=dev` reports no production dependency advisories as of the local check. The separate Newman development dependency currently brings upstream transitive advisories; the collection runs only on controlled local/CI test data. This is documented rather than hidden, and should be rechecked before consuming untrusted collections or deploying a runner.
 
