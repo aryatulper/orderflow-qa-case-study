@@ -3,52 +3,114 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#18382f">
   <title>OrderFlow · QA case study</title>
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
   <header class="site-header">
     <div class="shell header-inner">
-      <div><span class="eyebrow">CONTROLLED TEST SYSTEM</span><h1>OrderFlow</h1></div>
+      <a class="brand" href="#main-content" aria-label="OrderFlow home">
+        <span class="brand-mark" aria-hidden="true">OF<span class="brand-dot">.</span></span>
+        <span class="brand-name">OrderFlow <small>QA sandbox</small></span>
+      </a>
+      <nav class="site-nav" aria-label="Page sections">
+        <a href="#catalog">Catalog</a>
+        <a href="#orders-section">Orders</a>
+      </nav>
       <div class="session"><span id="current-user">Not signed in</span><button id="logout" class="text-button" type="button" hidden>Sign out</button></div>
     </div>
   </header>
-  <main class="shell">
-    <section class="intro">
-      <div><span class="eyebrow">ORDER LIFECYCLE LAB</span><h2>From cart to refund,<br><em>every state matters.</em></h2></div>
-      <p>This deliberately small storefront supports a reproducible QA case study. Payments are simulated; no real money or personal data is processed.</p>
+
+  <main id="main-content" class="shell">
+    <section class="intro" aria-labelledby="intro-title">
+      <div class="intro-copy">
+        <span class="eyebrow">A CONTROLLED COMMERCE ENVIRONMENT <span aria-hidden="true">/</span> 01</span>
+        <h1 id="intro-title">Follow an order.<br><span>Verify every state.</span></h1>
+        <p>Choose a product, place an order, then test what happens through payment, cancellation and refund.</p>
+      </div>
+      <div class="process" aria-label="Order lifecycle">
+        <span class="process-label">THE TEST PATH</span>
+        <ol>
+          <li><span>01</span> Select</li>
+          <li><span>02</span> Reserve</li>
+          <li><span>03</span> Pay</li>
+          <li><span>04</span> Reconcile</li>
+        </ol>
+      </div>
     </section>
+
+    <p class="system-note"><span class="note-mark" aria-hidden="true"></span><strong>Simulation only</strong> — payments and refunds are recorded in a test ledger. No money or personal data is processed.</p>
     <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+
     <section id="login-panel" class="panel login-panel" aria-labelledby="login-title">
-      <div><span class="eyebrow">DEMO ACCESS</span><h3 id="login-title">Sign in</h3><p>Use a seeded customer or admin account to explore each workflow.</p></div>
-      <form id="login-form">
-        <label for="email">Email</label><input id="email" name="email" type="email" autocomplete="username" value="arya@example.test" required>
-        <label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" value="demo123" required>
+      <form id="login-form" class="login-form">
+        <h2 id="login-title">Sign in to continue</h2>
+        <label for="email">Email address</label>
+        <input id="email" name="email" type="email" autocomplete="username" value="arya@example.test" required>
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" value="demo123" required>
+        <p class="form-hint">All demo accounts use <code>demo123</code>.</p>
         <button class="primary" type="submit">Sign in</button>
       </form>
-      <p class="hint">Customer: arya@example.test · Other customer: other@example.test · Admin: admin@example.test<br>All demo passwords: demo123</p>
+      <div class="login-intro">
+        <span class="eyebrow">DEMO ACCESS / NO SIGN-UP</span>
+        <h3>Step inside the test shop.</h3>
+        <p>Use a seeded account to explore the customer or admin side of an order. All actions stay inside this sandbox.</p>
+        <div class="demo-accounts" role="group" aria-label="Choose a demo account">
+          <button class="demo-account" type="button" data-demo-email="arya@example.test" aria-pressed="true"><span>Customer</span><small>Place and pay</small></button>
+          <button class="demo-account" type="button" data-demo-email="other@example.test" aria-pressed="false"><span>Second customer</span><small>Access checks</small></button>
+          <button class="demo-account" type="button" data-demo-email="admin@example.test" aria-pressed="false"><span>Admin</span><small>Issue refunds</small></button>
+        </div>
+      </div>
     </section>
+
     <div id="workspace" hidden>
+      <div class="workspace-heading"><span class="eyebrow">YOUR WORKSPACE</span><span class="workspace-heading-note">Explore the shop · observe the ledger</span></div>
       <div class="columns">
-        <section class="panel" aria-labelledby="products-title">
-          <div class="section-head"><div><span class="eyebrow">01 / CATALOG</span><h3 id="products-title">Products</h3></div><button id="refresh-products" class="text-button" type="button">Refresh stock</button></div>
-          <div id="products" class="product-grid"></div>
+        <section id="catalog" class="panel catalog-panel" aria-labelledby="products-title">
+          <div class="section-head">
+            <div><span class="section-index">01 / BROWSE</span><h2 id="products-title">Product catalog</h2><p>Real stock changes with each order and cancellation.</p></div>
+            <button id="refresh-products" class="text-button" type="button">Refresh stock</button>
+          </div>
+          <div id="products" class="product-list"></div>
         </section>
+
         <aside class="panel cart-panel" aria-labelledby="cart-title">
-          <span class="eyebrow">02 / CHECKOUT</span><h3 id="cart-title">Your cart</h3>
+          <div class="cart-heading"><span class="section-index">02 / RESERVE</span><span id="cart-count" class="cart-count" aria-live="polite">0 items</span></div>
+          <h2 id="cart-title">Your cart</h2>
           <div id="cart-items" class="cart-items"><p class="muted">Nothing in your cart yet.</p></div>
-          <div class="total"><span>Total</span><strong id="cart-total">₺0.00</strong></div>
+          <div class="total"><span>Estimated total</span><strong id="cart-total">₺0.00</strong></div>
           <button id="place-order" class="primary" type="button" disabled>Place order</button>
-          <p class="hint">Stock is reserved when the order is placed. Payment is a deterministic simulation.</p>
+          <p class="cart-hint">Stock is reserved on placement. Payment happens separately in your order history.</p>
         </aside>
       </div>
-      <section class="panel orders-panel" aria-labelledby="orders-title">
-        <div class="section-head"><div><span class="eyebrow">03 / HISTORY</span><h3 id="orders-title">Orders &amp; state changes</h3></div><button id="refresh-orders" class="text-button" type="button">Refresh orders</button></div>
+
+      <section id="orders-section" class="panel orders-panel" aria-labelledby="orders-title">
+        <div class="section-head">
+          <div><span class="section-index">03 / FOLLOW THROUGH</span><h2 id="orders-title">Order history</h2><p>Recent 50 orders, with their state, payment and refund trail.</p></div>
+          <div class="order-tools">
+            <label for="order-filter">Status</label>
+            <select id="order-filter">
+              <option value="">All states</option>
+              <option value="PENDING_PAYMENT">Pending payment</option>
+              <option value="PAID">Paid</option>
+              <option value="PARTIALLY_REFUNDED">Partially refunded</option>
+              <option value="REFUNDED">Refunded</option>
+              <option value="CANCELLED">Cancelled</option>
+            </select>
+            <button id="refresh-orders" class="text-button" type="button">Refresh orders</button>
+          </div>
+        </div>
         <div id="orders" class="order-list"><p class="muted">No orders yet.</p></div>
       </section>
     </div>
   </main>
-  <footer class="shell">QA PORTFOLIO CASE STUDY <span>·</span> SIMULATED COMMERCE ONLY</footer>
+
+  <footer class="site-footer">
+    <div class="shell footer-inner"><span>OrderFlow / QA portfolio case study</span><span>Simulated commerce · No real transactions</span><a href="https://github.com/aryatulper/orderflow-qa-case-study" target="_blank" rel="noopener noreferrer">Read the case study <span aria-hidden="true">↗</span></a></div>
+  </footer>
   <script src="/app.js" defer></script>
 </body>
 </html>
