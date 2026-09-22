@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#18382f">
   <title>OrderFlow · QA case study</title>
-  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to content</a>
@@ -43,6 +43,21 @@
 
     <p class="system-note"><span class="note-mark" aria-hidden="true"></span><strong>Simulation only</strong> — payments and refunds are recorded in a test ledger. No money or personal data is processed.</p>
     <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+
+    <section id="local-file-help" class="panel launch-panel" aria-labelledby="launch-title" hidden>
+      <div>
+        <span class="eyebrow">LOCAL FILE PREVIEW / SERVER REQUIRED</span>
+        <h2 id="launch-title">The design is here. The shop needs its server.</h2>
+        <p>You opened the HTML file directly. Sign-in, stock, orders and refunds need the local app and PostgreSQL; they cannot run from a file.</p>
+      </div>
+      <div class="launch-steps">
+        <span class="section-index">RUN THE FULL DEMO</span>
+        <p>In a terminal, from the project folder, run:</p>
+        <code>docker compose up --build -d</code>
+        <a class="primary launch-link" href="http://localhost:3000">Open the running shop <span aria-hidden="true">↗</span></a>
+        <small>Docker Compose must be installed. Setup details are in the <a href="https://github.com/aryatulper/orderflow-qa-case-study#run-locally" target="_blank" rel="noopener noreferrer">README</a>.</small>
+      </div>
+    </section>
 
     <section id="login-panel" class="panel login-panel" aria-labelledby="login-title">
       <form id="login-form" class="login-form">
@@ -111,6 +126,6 @@
   <footer class="site-footer">
     <div class="shell footer-inner"><span>OrderFlow / QA portfolio case study</span><span>Simulated commerce · No real transactions</span><a href="https://github.com/aryatulper/orderflow-qa-case-study" target="_blank" rel="noopener noreferrer">Read the case study <span aria-hidden="true">↗</span></a></div>
   </footer>
-  <script src="/app.js" defer></script>
+  <script src="./app.js" defer></script>
 </body>
 </html>
