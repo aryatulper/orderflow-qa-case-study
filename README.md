@@ -38,6 +38,8 @@ npm run test:sql
 
 Open [http://localhost:3000](http://localhost:3000). On first startup the app creates its schema and seeds four products and three demo accounts:
 
+Opening `public/index.html` directly is a styled preview only. The login and order flows require the app server and PostgreSQL, so use the `http://localhost:3000` address above for the working demo.
+
 | Role | Email | Password |
 | --- | --- | --- |
 | Customer | `arya@example.test` | `demo123` |

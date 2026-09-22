@@ -1,4 +1,19 @@
 import { expect, request, test } from '@playwright/test';
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
+
+test('direct file preview stays styled and explains how to run the shop', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.goto(pathToFileURL(resolve('public/index.html')).href);
+
+  await expect(page.locator('#local-file-help')).toBeVisible();
+  await expect(page.locator('#login-panel')).toBeHidden();
+  await expect(page.locator('.site-nav')).toBeHidden();
+  await expect(page.getByRole('link', { name: 'Open the running shop' })).toHaveAttribute('href', 'http://localhost:3000');
+  expect(await page.locator('html').evaluate(element => getComputedStyle(element).backgroundColor)).toBe('rgb(243, 241, 233)');
+  expect(errors).toEqual([]);
+});
 
 test('mobile sign-in is reachable and demo accounts are clear', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });

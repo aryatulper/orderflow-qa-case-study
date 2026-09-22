@@ -112,6 +112,16 @@ a { color: inherit; }
 .form-hint { margin: 0 0 6px; font-size: 11px; color: var(--muted); }
 .form-hint code { color: var(--ink); font-weight: 700; }
 
+.launch-panel { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(250px, .8fr); gap: 44px; max-width: 940px; margin-bottom: 55px; padding: 34px; }
+.launch-panel h2 { max-width: 500px; margin: 12px 0; font-size: clamp(28px, 3vw, 38px); line-height: 1.12; }
+.launch-panel p { max-width: 520px; margin: 0; color: var(--muted); font-size: 14px; }
+.launch-steps { display: flex; flex-direction: column; align-items: flex-start; gap: 13px; padding-left: 35px; border-left: 1px solid var(--line); }
+.launch-steps p { margin-top: 3px; font-size: 12px; }
+.launch-steps code { display: block; width: 100%; overflow-x: auto; padding: 14px; border: 1px solid var(--line); background: #edf0e8; color: var(--forest); font-size: 12px; font-weight: 700; white-space: nowrap; }
+.launch-link { display: inline-flex; align-items: center; gap: 15px; justify-content: space-between; text-decoration: none; }
+.launch-steps small { color: var(--muted); font-size: 11px; line-height: 1.5; }
+.launch-steps small a { color: var(--forest); font-weight: 750; }
+
 .workspace-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 27px 0 12px; }
 .workspace-heading-note { color: var(--muted); font-size: 12px; }
 .columns { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(290px, .8fr); align-items: start; gap: 18px; }
@@ -189,11 +199,13 @@ a { color: inherit; }
   .process { border-left: 0; border-top: 1px solid #bdc6ba; padding: 15px 0 0; }
   .process ol { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
   .process li { display: flex; flex-direction: column; gap: 3px; }
-  .columns, .login-panel { grid-template-columns: 1fr; }
+  .columns, .login-panel, .launch-panel { grid-template-columns: 1fr; }
   .cart-panel { position: static; }
   .login-panel { gap: 26px; }
   .login-intro, .login-form { grid-column: 1; grid-row: auto; }
   .login-form { padding: 0 0 23px; border-left: 0; border-bottom: 1px solid var(--line); }
+  .launch-panel { gap: 24px; }
+  .launch-steps { padding: 22px 0 0; border-left: 0; border-top: 1px solid var(--line); }
   .footer-inner { flex-wrap: wrap; padding-block: 22px; }
   .orders-panel .section-head { flex-wrap: wrap; }
   .order-tools { width: 100%; justify-content: flex-start; }

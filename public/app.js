@@ -1,4 +1,10 @@
-const state = { token: sessionStorage.getItem('orderflow-token'), user: JSON.parse(sessionStorage.getItem('orderflow-user') || 'null'), products: [], orders: [], cart: new Map(), placingOrder: false };
+// A directly opened HTML file can preview the UI, but cannot call our API.
+const isFilePreview = location.protocol === 'file:';
+const state = {
+  token: isFilePreview ? null : sessionStorage.getItem('orderflow-token'),
+  user: isFilePreview ? null : JSON.parse(sessionStorage.getItem('orderflow-user') || 'null'),
+  products: [], orders: [], cart: new Map(), placingOrder: false
+};
 const $ = id => document.getElementById(id);
 const money = cents => new Intl.NumberFormat('en-TR', { style: 'currency', currency: 'TRY' }).format(cents / 100);
 const dateTime = value => new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
@@ -215,7 +221,14 @@ $('place-order').addEventListener('click', async () => {
   finally { state.placingOrder = false; submit.textContent = 'Place order'; submit.disabled = state.cart.size === 0; }
 });
 
-renderSession();
-if (state.user) Promise.all([refreshProducts(), refreshOrders()]).catch(() => {
-  sessionStorage.clear(); state.token = null; state.user = null; renderSession(); notify('Session expired. Sign in again.', true);
-});
+if (isFilePreview) {
+  $('local-file-help').hidden = false;
+  $('login-panel').hidden = true;
+  document.querySelector('.site-nav').hidden = true;
+  $('current-user').textContent = 'File preview';
+} else {
+  renderSession();
+  if (state.user) Promise.all([refreshProducts(), refreshOrders()]).catch(() => {
+    sessionStorage.clear(); state.token = null; state.user = null; renderSession(); notify('Session expired. Sign in again.', true);
+  });
+}
